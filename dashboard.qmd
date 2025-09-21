@@ -1,0 +1,258 @@
+---
+title: "UNESCO Welterbestätten"
+format: html
+code-fold: true
+jupyter: python3
+---
+
+```{python}
+import pandas as pd
+import plotly.express as px
+
+# Daten laden und vorbereiten
+CSV_PATH = "World-Heritage-2025.csv"
+df = pd.read_csv(CSV_PATH)
+
+# Spalten säubern / Typen anpassen
+df["date_inscribed"] = pd.to_numeric(df["date_inscribed"], errors="coerce").astype("Int64")
+df = df.dropna(subset=["name_en", "date_inscribed", "category", "latitude", "longitude"]).reset_index(drop=True)
+
+# Farben für die einzelnen Kategorien festlegen
+palette = px.colors.qualitative.Plotly
+unique_cats = sorted(df["category"].unique())
+color_map = {cat: palette[i % len(palette)] for i, cat in enumerate(unique_cats)}
+df["color"] = df["category"].map(color_map)
+
+# Erstelle die Weltkarte
+fig = px.scatter_geo(
+    df,
+    lat="latitude",
+    lon="longitude",
+    hover_name="name_en",
+    color="category",
+    color_discrete_map=color_map,
+    projection="natural earth",
+    title="UNESCO-Welterbestätten",
+)
+
+# Anpassungen für die Karte
+fig.update_layout(
+    width=700,
+    height=400,
+    geo=dict(
+        showland=True,
+        landcolor="lightgray",
+        countrycolor="gray",
+        showframe=False,
+        showcoastlines=True,
+        coastlinecolor="gray",
+        projection=dict(
+            type="equal earth"
+        ),
+        center=dict(
+            lat=0,
+            lon=0
+        ),
+        lonaxis=dict(
+            showgrid=True,
+            gridwidth=0.5,
+            gridcolor="lightgray"
+        ),
+        lataxis=dict(
+            showgrid=True,
+            gridwidth=0.5,
+            gridcolor="lightgray"
+        )
+    )
+)
+
+# Zeige die Karte an 
+fig.show()
+```
+
+
+## Interaktive Karte
+
+```{python}
+import pandas as pd
+import plotly.express as px
+
+# Daten laden
+CSV_PATH = "World-Heritage-2025.csv"
+df = pd.read_csv(CSV_PATH)
+
+# Spalten bereinigen
+df["date_inscribed"] = pd.to_numeric(df["date_inscribed"], errors="coerce").astype("Int64")
+df = df.dropna(subset=["name_en", "date_inscribed", "category", "latitude", "longitude"]).reset_index(drop=True)
+
+# Sortieren für richtigen Slider
+df = df.sort_values("date_inscribed")
+df["date_inscribed"] = df["date_inscribed"].astype(int).astype(str)
+
+# Farben
+palette = px.colors.qualitative.Plotly
+unique_cats = sorted(df["category"].unique())
+color_map = {cat: palette[i % len(palette)] for i, cat in enumerate(unique_cats)}
+
+# Plot erstellen
+fig = px.scatter_geo(
+    df,
+    lat="latitude",
+    lon="longitude",
+    hover_name="name_en",
+    color="category",
+    color_discrete_map=color_map,
+    projection="natural earth",
+    animation_frame="date_inscribed",
+    title="UNESCO-Welterbestätten mit Timeslider",
+)
+
+fig.update_layout(
+    width=900,
+    height=500,
+    geo=dict(
+        showland=True,
+        landcolor="lightgray",
+        countrycolor="gray",
+        showframe=False,
+        showcoastlines=True,
+        coastlinecolor="gray",
+        projection=dict(type="equal earth"),
+        center=dict(lat=0, lon=0),
+        lonaxis=dict(showgrid=True, gridwidth=0.5, gridcolor="lightgray"),
+        lataxis=dict(showgrid=True, gridwidth=0.5, gridcolor="lightgray")
+    )
+)
+
+fig.update_layout(
+    sliders=[dict(currentvalue={"prefix": "Jahr: "})]
+)
+
+
+fig
+```
+
+## Kumulierte Visualisierung
+
+```{python}
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+
+# Daten laden
+CSV_PATH = "World-Heritage-2025.csv"
+df = pd.read_csv(CSV_PATH)
+
+# Spalten bereinigen
+df["date_inscribed"] = pd.to_numeric(df["date_inscribed"], errors="coerce").astype("Int64")
+df = df.dropna(subset=["name_en", "date_inscribed", "category", "latitude", "longitude"]).reset_index(drop=True)
+
+# Sortieren
+df = df.sort_values("date_inscribed")
+
+# Alle Jahre sammeln
+years = sorted(df["date_inscribed"].dropna().unique())
+
+# Kumulative Version des DataFrames erstellen
+frames = []
+for year in years:
+    subset = df[df["date_inscribed"] <= year].copy()
+    subset["year"] = year
+    frames.append(subset)
+
+df_cum = pd.concat(frames, ignore_index=True)
+df_cum["year"] = df_cum["year"].astype(int)
+
+# Farben
+palette = px.colors.qualitative.Plotly
+unique_cats = sorted(df["category"].unique())
+color_map = {cat: palette[i % len(palette)] for i, cat in enumerate(unique_cats)}
+
+# Basis-Plot
+fig = px.scatter_geo(
+    df_cum,
+    lat="latitude",
+    lon="longitude",
+    hover_name="name_en",
+    color="category",
+    color_discrete_map=color_map,
+    projection="natural earth",
+    animation_frame="year",
+    title="UNESCO-Welterbestätten mit Timeslider (kumuliert)",
+)
+
+# --- Kumulative Zählung vorbereiten ---
+counts = df_cum.groupby("year")["name_en"].nunique().to_dict()
+
+# Frames mit Annotation ergänzen
+new_frames = []
+for fr in fig.frames:
+    year = int(fr.name)
+    count = counts[year]
+    fr.layout = go.Layout(
+        annotations=[
+            dict(
+                x=0.98, y=0.95, xref="paper", yref="paper",
+                text=f"Gesamt: {count}",
+                showarrow=False,
+                font=dict(size=20, color="black"),
+                bgcolor="white",
+                bordercolor="black",
+                borderwidth=1,
+                opacity=0.8
+            )
+        ]
+    )
+    new_frames.append(fr)
+fig.frames = new_frames
+
+# Slider nur mit Jahren
+steps = []
+for year in years:
+    step = dict(
+        method="animate",
+        args=[[str(year)],
+              dict(mode="immediate", frame=dict(duration=500, redraw=True), transition=dict(duration=300))],
+        label=str(year)
+    )
+    steps.append(step)
+
+sliders = [dict(
+    active=0,
+    currentvalue={"prefix": "Jahr: "},
+    pad={"t": 50},
+    steps=steps
+)]
+
+# Layout anpassen
+fig.update_layout(
+    width=900,
+    height=500,
+    geo=dict(
+        showland=True,
+        landcolor="lightgray",
+        countrycolor="gray",
+        showframe=False,
+        showcoastlines=True,
+        coastlinecolor="gray",
+        projection=dict(type="equal earth"),
+        center=dict(lat=0, lon=0),
+        lonaxis=dict(showgrid=True, gridwidth=0.5, gridcolor="lightgray"),
+        lataxis=dict(showgrid=True, gridwidth=0.5, gridcolor="lightgray")
+    ),
+    sliders=sliders,
+    annotations=[dict(  # Startwert für erstes Jahr
+        x=0.98, y=0.95, xref="paper", yref="paper",
+        text=f"Gesamt: {counts[years[0]]}",
+        showarrow=False,
+        font=dict(size=20, color="black"),
+        bgcolor="white",
+        bordercolor="black",
+        borderwidth=1,
+        opacity=0.8
+    )]
+)
+
+fig
+```
+
