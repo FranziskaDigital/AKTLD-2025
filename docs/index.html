@@ -39,6 +39,9 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script src="site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -94,7 +97,7 @@ ul.task-list li input[type="checkbox"] {
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./about.html"> 
-<span class="menu-text">About</span></a>
+<span class="menu-text">Über dieses Dashboard</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./dashboard.html"> 
@@ -136,9 +139,18 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>This site is under construction. It will be finished at the time of the AKTLD 2025 conference in Cottbus.</p>
+<p>Diese Webseite mit einem Dashboard zum UNESCO-Weltkulturerbe wurde für die <strong>Jahrestagung des Arbeitskreises Theorie und Lehre der Denkmalpflege</strong> 2025 in Cottbus erstellt und dient der weiterführenden Information zum Posterbeitrag “Weltkulturerbe Digital – Seminar zur Einführung in quantitative Analysen und Visualisierungen digitaler Information”.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="./img/Klemstein_Poster_AKTLD-2025.jpg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" data-glightbox="description: .lightbox-desc-1" title="Posterbeitrag AKTLD-2025"><img src="./img/Klemstein_Poster_AKTLD-2025.jpg" class="img-fluid figure-img" alt="Posterbeitrag AKTLD-2025"></a></p>
+<figcaption>Posterbeitrag AKTLD-2025</figcaption>
+</figure>
+</div>
 
 
+<div class="hidden" aria-hidden="true">
+<span class="glightbox-desc lightbox-desc-1">Posterbeitrag AKTLD-2025</span>
+</div>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -551,6 +563,31 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 });
 </script>
 </div> <!-- /content -->
+<script>var lightboxQuarto = GLightbox({"descPosition":"bottom","loop":false,"openEffect":"zoom","closeEffect":"zoom","selector":".lightbox"});
+window.onload = () => {
+  lightboxQuarto.on('slide_before_load', (data) => {
+    const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+    const href = trigger.getAttribute('href');
+    if (href !== null) {
+      const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+      if (imgEl !== null) {
+        const srcAttr = imgEl.getAttribute("src");
+        if (srcAttr && srcAttr.startsWith("data:")) {
+          slideConfig.href = srcAttr;
+        }
+      }
+    } 
+  });
+
+  lightboxQuarto.on('slide_after_load', (data) => {
+    const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+    if (window.Quarto?.typesetMath) {
+      window.Quarto.typesetMath(slideNode);
+    }
+  });
+
+};
+          </script>
 
 
 

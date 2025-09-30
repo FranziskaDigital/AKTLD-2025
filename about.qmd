@@ -1,5 +1,32 @@
 ---
-title: "About"
+title: "Über dieses Dashboard"
 ---
 
-This site is under construction. It will be finished at the time of the AKTLD 2025 conference in Cottbus.
+Dieses Dashboard präsentiert die Ergebnisse eines Seminars, das im Rahmen des hochschulübergreifenden Masterstudiengangs <a href="https://www.digitale-methodik.uni-mainz.de/">„Digitale Methodik in den Geistes‑ und Kulturwissenschaften“</a> angeboten wurde. Ziel des Seminars war es, zentrale Konzepte statistischer Datenanalyse – Kategorien, eindimensionale Häufigkeitsverteilungen, Mittelwerte und Streuung, Maße der Konzentration, Stichprobe und Grundgesamtheit – sowie die Grundlagen und Werkzeuge der Datenvisualisierung anhand eines konkreten kulturwissenschaftlichen Fallbeispiels zu vermitteln.
+
+## Ausgangslage
+
+Den Ausgangspunkt bildete der <a href="https://whc.unesco.org/en/syndication">UNESCO-Datensatz zum Weltkulturerbe</a>, der grundsätzlich eine Vielzahl relevanter Informationen enthält – etwa die Bezeichnung
+der Welterbestätten, Geokoordinaten sowie die zugehöri-
+gen Welterbekategorien. Allerdings liegt dieser Datensatz
+in verschiedenen, größtenteils wenig verarbeiteten oder
+schwer weiterzuverarbeitenden Dateiformaten vor (u.a.
+xls, xlsx, xml, kml, GeoRSS), von denen einige proprietär oder für statistische Analysen ungeeignet sind. Im Kurs wurde zunächst das Microsoft-Format xlsx verwendet. Für weiterführende Analysen war eine tiefgreifende Datenbereinigung und -vorbereitung erforderlich. Auch die Umwandlung in ein offenes und maschinenlesbares csv-Format war notwendig, um die Daten in Analysewerkzeugen effizient nutzen zu können. Die anschließende Datenanreicherung mit Normdaten und die Bereinigung von Dubletten erwies sich als äußerst zeitintensiv und nahm mehrere Wochen in Anspruch.
+Erst nach Abschluss dieser umfassenden Aufbereitung konnte der Datensatz für statistische Auswertungen sinnvoll eingesetzt werden.
+
+## Analytische Schwerpunkte
+
+Im Rahmen des Seminars wurden aus den gelesenen Texten Thesen abgeleitet und quantitativ ausgewertet. Dabei standen folgende Fragen im Mittelpunkt: 
+
+* Eignung quantitativer Methoden für geistes‑ und kulturwissenschaftliche Fragestellungen.  
+* Geeignete Visualisierungsformen (z. B. Karten, Balken‑ und Liniendiagramme) versus solche, die potenziell irreführend sein können.
+* Kritische Reflexion über die Grenzen statistischer Modelle bei der Darstellung komplexer kulturhistorischer Prozesse.
+
+## Beitrag zur Kulturerbeforschung
+
+Durch die Verknüpfung geisteswissenschaftlicher Fragestellungen mit datengetriebenen Analysemethoden leistet das Projekt einen Beitrag zur Sichtbarmachung globaler Ungleichheiten im Welterbe‑Programm. Die resultierenden Auswertungen unterstützen Diskussionen über: 
+
+* Schutzprioritäten und Ressourcenallokation.  
+* Repräsentationslücken (z. B. Unterrepräsentation bestimmter Regionen oder Kulturen).  
+* Zukünftige Ausrichtung der Welterbepolitik auf Basis evidenzbasierter Erkenntnisse.
+     

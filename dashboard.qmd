@@ -9,11 +9,9 @@ jupyter: python3
 import pandas as pd
 import plotly.express as px
 
-# Daten laden und vorbereiten
 CSV_PATH = "World-Heritage-2025.csv"
 df = pd.read_csv(CSV_PATH)
 
-# Spalten säubern / Typen anpassen
 df["date_inscribed"] = pd.to_numeric(df["date_inscribed"], errors="coerce").astype("Int64")
 df = df.dropna(subset=["name_en", "date_inscribed", "category", "latitude", "longitude"]).reset_index(drop=True)
 
@@ -66,9 +64,355 @@ fig.update_layout(
     )
 )
 
-# Zeige die Karte an 
 fig.show()
 ```
+
+## Überblick-Statistiken (Tabellen)
+Alle relevanten Informationen auf einen BlicK: Größe des Datensatzes, Grundgrößen (Durchschnitts‑/Medianwerte etc.)
+
+```{python}
+
+import pandas as pd
+
+CSV_PATH = "World-Heritage-2025.csv"
+df = pd.read_csv(CSV_PATH)
+
+df["date_inscribed"] = pd.to_numeric(df["date_inscribed"], errors="coerce").astype("Int64")
+df = df.dropna(subset=["name_en", "date_inscribed", "category", "latitude", "longitude"]).reset_index(drop=True)
+
+# Kennzahlen berechnen
+total_sites   = df["name_en"].nunique()
+total_years   = df["date_inscribed"].nunique()
+years_range   = (df["date_inscribed"].min(), df["date_inscribed"].max())
+mean_lat      = df["latitude"].mean()
+mean_lon      = df["longitude"].mean()
+median_year   = df["date_inscribed"].median()
+
+# Ergebnis‑DataFrame
+summary_tbl = pd.DataFrame({
+    "Kennzahl": [
+        "Gesamtzahl der Welterbestätten",
+        "Unterschiedliche Einschreibungsjahre",
+        "Einschreibungen‑Jahresbereich",
+        "Durchschnittlicher Breitengrad",
+        "Durchschnittlicher Längengrad",
+        "Median‑Einschreibungsjahr"
+    ],
+    "Wert": [
+        total_sites,
+        total_years,
+        f"{years_range[0]}–{years_range[1]}",
+        f"{mean_lat:.2f}°",
+        f"{mean_lon:.2f}°",
+        int(median_year)
+    ]
+})
+
+summary_tbl
+
+```
+
+## Jahresverteilung (Histogramm)
+Das Histogramm zeigt, in welchen Zeiträume besonders viele oder wenige Eintragungen in die Welterbeliste erfolgt sind.
+
+```{python}
+import plotly.express as px
+
+fig_hist = px.histogram(
+    df,
+    x="date_inscribed",
+    nbins=30,                     
+    title="Anzahl der UNESCO‑Welterbestätten pro Inskriptionsjahr",
+    labels={"date_inscribed":"Jahr der Aufnahme", "count":"Anzahl"},
+    color_discrete_sequence=["steelblue"]
+)
+fig_hist.update_layout(bargap=0.1, width=800, height=450)
+fig_hist.show()
+
+```
+
+## Kategorien-Entwicklung im Verlauf der Zeit (gestapletes Flächendiagramm)
+Der Blick auf die Entwicklung der einzelnen Kategorien veranschaulicht, welchen Anteil die einzelne Kategorien (Kulturerbe, Naturerbe, Mischformen) im Zeitverlauf besitzen.
+
+```{python}
+cat_year = (
+    df.groupby(["date_inscribed", "category"])
+      .size()
+      .reset_index(name="count")
+)
+
+fig_area = px.area(
+    cat_year,
+    x="date_inscribed",
+    y="count",
+    color="category",
+    title="Entwicklung der Kategorien (Kulturerbe, Naturerbe, Mixed) über die Jahre",
+    labels={"date_inscribed":"Jahr", "count":"Anzahl"},
+    color_discrete_map=color_map   
+)
+fig_area.update_layout(width=850, height=470)
+fig_area.show()
+```
+
+## Geografische Konzentration (Gini‑Koeffizient & Lorenz‑Kurve)
+Der Gini‑Wert (0 = gleichmäßig, 1 = extrem ungleich) quantifiziert, ob UNESCO‑Stätten stark in wenigen Ländern konzentriert sind. Auf diese Weise kann ermittelt werden, ob die Welterbestätten ungleich verteilt sind.
+
+```{python}
+import numpy as np
+import plotly.graph_objects as go
+
+if "states_name_en" in df.columns:
+    country_col = "states_name_en"
+elif "country" in df.columns:
+    country_col = "country"
+else:
+    raise KeyError("Keine Länderspalte gefunden (states_name_en / country).")
+
+country_counts = df[country_col].value_counts().sort_values(ascending=False)
+
+# Gini‑Berechnung
+def gini(array):
+    """Gini‑Koeffizient für 1‑D‑Array."""
+    array = np.array(array, dtype=float)
+    if np.amin(array) < 0:
+        array -= np.amin(array)                     
+    array = np.sort(array)
+    n = array.shape[0]
+    cumulative = np.cumsum(array)
+    gini_coef = (n + 1 - 2 * np.sum(cumulative) / cumulative[-1]) / n
+    return gini_coef
+
+gini_val = gini(country_counts.values)
+
+# Lorenz‑Kurve
+cum_counts = np.cumsum(country_counts.values) / country_counts.values.sum()
+cum_share  = np.arange(1, len(cum_counts)+1) / len(cum_counts)
+
+fig_gini = go.Figure()
+fig_gini.add_trace(go.Scatter(x=cum_share, y=cum_counts,
+                              mode="lines", name="Lorenz‑Kurve",
+                              line=dict(color="steelblue")))
+# Diagonale (Gleichverteilung)
+fig_gini.add_trace(go.Scatter(x=[0,1], y=[0,1],
+                              mode="lines", name="Perfekte Gleichverteilung",
+                              line=dict(dash="dash", color="gray")))
+fig_gini.update_layout(
+    title=f"Gini‑Koeffizient = {gini_val:.3f} – Ungleichheit der Verteilung nach Ländern",
+    xaxis_title="Kumulativer Anteil der Länder",
+    yaxis_title="Kumulativer Anteil der Stätten",
+    width=800, height=460,
+    showlegend=True
+)
+fig_gini.show()
+
+```
+
+## Heatmap / Dichtekarte
+Die Heat‑Map stellt visuell dar, wo sich UNESCO‑Welterbestätten räumlich konzentrieren.
+
+
+```{python}
+import pandas as pd
+import numpy as np
+import plotly.express as px
+
+CSV_PATH = "World-Heritage-2025.csv"
+df = pd.read_csv(CSV_PATH)
+df["date_inscribed"] = pd.to_numeric(df["date_inscribed"], errors="coerce").astype("Int64")
+df = df.dropna(
+    subset=["name_en", "date_inscribed", "category", "latitude", "longitude"]
+).reset_index(drop=True)
+
+# 2‑D‑Histogram
+lat_bins = np.linspace(df["latitude"].min(), df["latitude"].max(), 120)
+lon_bins = np.linspace(df["longitude"].min(), df["longitude"].max(), 240)
+heatmap, lat_edges, lon_bins = np.histogram2d(df["latitude"], df["longitude"],
+                                             bins=[lat_bins, lon_bins])
+
+# Bin‑Mitte für Achsen‑Beschriftung
+x_mid = (lon_bins[:-1] + lon_bins[1:]) / 2
+y_mid = (lat_edges[:-1] + lat_edges[1:]) / 2
+
+fig = px.imshow(
+    heatmap,
+    labels=dict(x="Längengrad", y="Breitengrad", color="Anzahl"),
+    x=x_mid,
+    y=y_mid,
+    color_continuous_scale="YlOrRd",
+    origin="lower",                 
+    title="Dichte der UNESCO‑Welterbestätten",
+)
+
+fig.update_layout(width=850, height=460)
+fig.show()
+```
+
+## Choroplethen‑Karte: Anzahl pro Land
+Gibt einen klaren, länderspezifischen Überblick darüber, welche Staaten besonders viele Welterbestätten besitzen.
+
+```{python}
+import plotly.express as px
+
+# Aggregation pro Land
+country_agg = (
+    df.groupby(country_col)
+      .size()
+      .reset_index(name="count")
+)
+
+fig_choro = px.choropleth(
+    country_agg,
+    locations=country_col,
+    locationmode="country names",      
+    color="count",
+    color_continuous_scale="Blues",
+    title="Anzahl UNESCO‑Welterbestätten pro Land (Stand 2025)",
+    labels={"count":"Stätten"}
+)
+fig_choro.update_layout(width=900, height=500)
+fig_choro.show()
+```
+
+## Box‑Plot: Breitengrad nach Kategorie 
+Zeigt, ob bestimmte Kategorien (z. Bsp. Naturebe) eher in bestimmten geographischen Zonen (höherer/niedrigerer Breitengrad) liegen.
+
+```{python}
+import plotly.express as px
+
+fig_box = px.box(
+    df,
+    x="category",
+    y="latitude",
+    color="category",
+    color_discrete_map=color_map,
+    title="Verteilung des Breitengrads je UNESCO‑Kategorie",
+    labels={"latitude":"Breitengrad", "category":"Kategorie"}
+)
+fig_box.update_layout(width=800, height=460, showlegend=False)
+fig_box.show()
+```
+
+## Korrelation zwischen Einschreibungsjahr und geographischer Lage
+Prüft, ob neuere Einträge tendenziell in anderen geographischen Regionen liegen.
+
+```{python}
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import scipy.stats as stats   
+
+CSV_PATH = "World-Heritage-2025.csv"
+df = pd.read_csv(CSV_PATH)
+
+
+df["date_inscribed"] = pd.to_numeric(df["date_inscribed"], errors="coerce").astype("Int64")
+df["latitude"]       = pd.to_numeric(df["latitude"], errors="coerce")
+df["longitude"]      = pd.to_numeric(df["longitude"], errors="coerce")
+
+df = df.dropna(subset=["name_en", "date_inscribed", "category",
+                       "latitude", "longitude"]).reset_index(drop=True)
+
+
+# Pearson‑Korrelationen
+corr_lat, p_lat = stats.pearsonr(df["date_inscribed"], df["latitude"])
+corr_lon, p_lon = stats.pearsonr(df["date_inscribed"], df["longitude"])
+
+# Lineare Regression (SciPy → linregress)
+#    y = a * x + b   (hier: Breitengrad als y, Jahr als x)
+slope, intercept, r_value, p_value, std_err = stats.linregress(
+    df["date_inscribed"], df["latitude"]
+)
+
+# Werte für die Regressionsgerade erzeugen
+x_line = np.linspace(df["date_inscribed"].min(),
+                     df["date_inscribed"].max(), 500)
+y_line = slope * x_line + intercept
+
+# Scatter‑Plot + Regressionsgerade
+fig_scatter = px.scatter(
+    df,
+    x="date_inscribed",
+    y="latitude",
+    hover_name="name_en",
+    color="category",           
+    color_discrete_map=color_map if 'color_map' in globals() else None,
+    title=(
+        f"Zusammenhang Jahr ↔ Breitengrad (r = {corr_lat:.2f}, "
+        f"p = {p_lat:.3g})"
+    ),
+    labels={"date_inscribed": "Einschreibungsjahr", "latitude": "Breitengrad"}
+)
+
+# Regressionsgerade als separaten Trace hinzufügen
+fig_scatter.add_scatter(
+    x=x_line,
+    y=y_line,
+    mode="lines",
+    line=dict(color="black", width=2, dash="dash"),
+    name=f"Ols‑Fit (y = {slope:.4f}·x + {intercept:.1f})"
+)
+
+fig_scatter.update_layout(
+    width=850,
+    height=460,
+    legend=dict(title="Kategorie")
+)
+
+fig_scatter.show()
+
+```
+
+
+## Cluster-Analyse der Standorte (k-Means)
+Identifiziert räumliche Hot‑Spots und liefert eine mögliche Basis für regionale Netzwerk‑ oder Kooperations‑Strategien. 
+
+```{python}
+import numpy as np
+import pandas as pd
+import plotly.express as px
+from scipy.cluster.vq import kmeans2
+
+CSV_PATH = "World-Heritage-2025.csv"
+df = pd.read_csv(CSV_PATH)
+
+df["date_inscribed"] = pd.to_numeric(df["date_inscribed"], errors="coerce").astype("Int64")
+df = df.dropna(
+    subset=["name_en", "date_inscribed", "category", "latitude", "longitude"]
+).reset_index(drop=True)
+
+
+coords = df[["latitude", "longitude"]].values
+
+coords_mean = coords.mean(axis=0)
+coords_std  = (coords - coords_mean) / coords.std(axis=0)
+
+k = 5
+centroids, labels = kmeans2(coords_std, k, iter=100, minit='points')
+
+df["cluster"] = labels
+
+
+cluster_palette = px.colors.sequential.Plasma[:k]          
+cluster_map = {i: cluster_palette[i] for i in range(k)}
+df["cluster_color"] = df["cluster"].map(cluster_map)
+
+
+fig_cluster = px.scatter_geo(
+    df,
+    lat="latitude",
+    lon="longitude",
+    hover_name="name_en",
+    color="cluster",                 
+    color_discrete_map=cluster_map,  
+    projection="natural earth",
+    title=f"Geographische Cluster (k‑Means, k={k}) der UNESCO‑Welterbestätten"
+)
+
+fig_cluster.update_layout(width=900, height=500)
+fig_cluster.show()
+
+```
+
 
 
 ## Interaktive Karte
@@ -77,11 +421,9 @@ fig.show()
 import pandas as pd
 import plotly.express as px
 
-# Daten laden
 CSV_PATH = "World-Heritage-2025.csv"
 df = pd.read_csv(CSV_PATH)
 
-# Spalten bereinigen
 df["date_inscribed"] = pd.to_numeric(df["date_inscribed"], errors="coerce").astype("Int64")
 df = df.dropna(subset=["name_en", "date_inscribed", "category", "latitude", "longitude"]).reset_index(drop=True)
 
@@ -128,7 +470,6 @@ fig.update_layout(
     sliders=[dict(currentvalue={"prefix": "Jahr: "})]
 )
 
-
 fig
 ```
 
@@ -139,11 +480,9 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-# Daten laden
 CSV_PATH = "World-Heritage-2025.csv"
 df = pd.read_csv(CSV_PATH)
 
-# Spalten bereinigen
 df["date_inscribed"] = pd.to_numeric(df["date_inscribed"], errors="coerce").astype("Int64")
 df = df.dropna(subset=["name_en", "date_inscribed", "category", "latitude", "longitude"]).reset_index(drop=True)
 
@@ -181,7 +520,7 @@ fig = px.scatter_geo(
     title="UNESCO-Welterbestätten mit Timeslider (kumuliert)",
 )
 
-# --- Kumulative Zählung vorbereiten ---
+# Kumulative Zählung vorbereiten
 counts = df_cum.groupby("year")["name_en"].nunique().to_dict()
 
 # Frames mit Annotation ergänzen
@@ -224,7 +563,6 @@ sliders = [dict(
     steps=steps
 )]
 
-# Layout anpassen
 fig.update_layout(
     width=900,
     height=500,

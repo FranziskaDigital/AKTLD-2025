@@ -2,4 +2,8 @@
 title: "AKTLD 2025"
 ---
 
-This site is under construction. It will be finished at the time of the AKTLD 2025 conference in Cottbus.
+Diese Webseite mit einem Dashboard zum UNESCO-Weltkulturerbe wurde für die **Jahrestagung des Arbeitskreises Theorie und Lehre der Denkmalpflege** 2025 in Cottbus erstellt und dient der weiterführenden Information zum Posterbeitrag "Weltkulturerbe Digital – Seminar zur
+Einführung in quantitative Analysen und Visualisierungen digitaler Information".
+
+![Posterbeitrag AKTLD-2025](/img/Klemstein_Poster_AKTLD-2025.jpg){.lightbox}
+
